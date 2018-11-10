@@ -11,7 +11,7 @@ Dirscover is meant to be fast. By default it will detect the amount of CPU cores
 ### Additional options
 ```
 -v, --verbose       increase output verbosity.
--pr, --proxy        specify a proxy to use (-p 127.0.0.1:8080).
+-pr, --proxy        specify a proxy to use (-pr 127.0.0.1:8080).
 -w, --wordlist      specify a file containing urls formatted http(s)://addr:port.
 -uf, --url_file     specify a file containing urls formatted http(s)://addr:port.
 -u URL, --url       specify a single url formatted http(s)://addr:port.
