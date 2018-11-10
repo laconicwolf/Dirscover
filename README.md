@@ -16,8 +16,8 @@ This script requires Python3 and does not work with previous versions. It may no
 -pr, --proxy        specify a proxy to use (-pr 127.0.0.1:8080).
 -w, --wordlist      specify a file containing urls formatted http(s)://addr:port.
 -uf, --url_file     specify a file containing urls formatted http(s)://addr:port.
--u URL, --url       specify a single url formatted http(s)://addr:port.
+-u, --url           specify a single url formatted http(s)://addr:port.
 -p, --processes     specify number of processes (default will utilize 1 process per cpu core).
--t, --threads       specify number of threads (default=5).
+-t, --threads       specify number of threads (default=5) per process.
 -to, --timeout      specify number of seconds until a connection timeout (default=10).
 ```
