@@ -3,7 +3,7 @@ A multi-processed, multi-threaded scanner to perform forced browsing on multiple
 
 Dirscover is meant to be fast. By default it will detect the amount of CPU cores available and launch that many processes. Each URL that you pass will be spawned as a new process, and each process is multi-threaded.
 
-This script requires Python3 and does not work with previous versions. It may not work on Windows (not sure why...if you figure it out let me know).
+This script requires Python3 and does not work with previous versions.
 
 ## Usage
 
