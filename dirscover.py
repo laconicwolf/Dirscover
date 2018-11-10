@@ -31,6 +31,9 @@ except ImportError as error:
 from requests.packages.urllib3.exceptions import InsecureRequestWarning
 
 
+
+
+
 def get_random_useragent():
     """Returns a randomly chosen User-Agent string."""
     win_edge = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/42.0.2311.135 Safari/537.36 Edge/12.246'
@@ -214,78 +217,80 @@ def main():
     print("\nTime taken = {0:.5f}".format(time.time() - start))
 
 
+# Commandline arguments
+parser = argparse.ArgumentParser()
+parser.add_argument("-v", "--verbose",
+                    help="increase output verbosity",
+                    action="store_true")
+parser.add_argument("-pr", "--proxy", 
+                    help="specify a proxy to use (-p 127.0.0.1:8080)")
+parser.add_argument("-w", "--wordlist",
+                    help="specify a file containing urls formatted http(s)://addr:port.")
+parser.add_argument("-uf", "--url_file",
+                    help="specify a file containing urls formatted http(s)://addr:port.")
+parser.add_argument("-u", "--url",
+                    help="specify a single url formatted http(s)://addr:port.")
+parser.add_argument("-p", "--processes",
+                    nargs="?",
+                    type=int,
+                    help="specify number of processes (default will utilize 1 process per cpu core)")
+parser.add_argument("-t", "--threads",
+                    nargs="?",
+                    type=int,
+                    const=5,
+                    default=5,
+                    help="specify number of threads (default=5)")
+parser.add_argument("-to", "--timeout",
+                    nargs="?", 
+                    type=int, 
+                    default=10, 
+                    help="specify number of seconds until a connection timeout (default=10)")
+args = parser.parse_args()
+
+
+# Suppress SSL warnings in the terminal
+requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
+
+# Number of cores. Will launch a process for each core.
+if args.processes:
+    cores = args.processes
+else:
+    cores = cpu_count()
+# Parse the urls
+if not args.url and not args.url_file:
+    parser.print_help()
+    print("\n[-] Please specify a URL (-u) or an input file containing URLs (-uf).\n")
+    exit()
+if args.url and args.url_file:
+    parser.print_help()
+    print("\n[-] Please specify a URL (-u) or an input file containing URLs (-uf). Not both\n")
+    exit()
+if args.url_file:
+    url_file = args.url_file
+    if not os.path.exists(url_file):
+        print("\n[-] The file cannot be found or you do not have permission to open the file. Please check the path and try again\n")
+        exit()
+    urls = open(url_file).read().splitlines()
+if args.url:
+    if not args.url.startswith('http'):
+        parser.print_help()
+        print("\n[-] Please specify a URL in the format proto://address:port (https://example.com:80).\n")
+        exit()
+    urls = [args.url]
+
+# Normalizes URLs to the proto://address:port format
+urls = normalize_urls(urls)
+
+# Parse the wordlist
+if not args.wordlist:
+    parser.print_help()
+    print("\n[-] Please specify an input file containing a wordlist (-w).\n")
+    exit()
+if not os.path.exists(args.wordlist):
+    print("\n[-] The file {} cannot be found or you do not have permission to open the file. Please check the path and try again\n".format(args.wordlist))
+    exit()
+with open(args.wordlist) as fh:
+    wordlist = fh.read().splitlines()
+
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser()
-    parser.add_argument("-v", "--verbose",
-                        help="increase output verbosity",
-                        action="store_true")
-    parser.add_argument("-pr", "--proxy", 
-                        help="specify a proxy to use (-pr 127.0.0.1:8080)")
-    parser.add_argument("-w", "--wordlist",
-                        help="specify a file containing urls formatted http(s)://addr:port.")
-    parser.add_argument("-uf", "--url_file",
-                        help="specify a file containing urls formatted http(s)://addr:port.")
-    parser.add_argument("-u", "--url",
-                        help="specify a single url formatted http(s)://addr:port.")
-    parser.add_argument("-p", "--processes",
-                        nargs="?",
-                        type=int,
-                        help="specify number of processes (default will utilize 1 process per cpu core)")
-    parser.add_argument("-t", "--threads",
-                        nargs="?",
-                        type=int,
-                        const=5,
-                        default=5,
-                        help="specify number of threads (default=5)")
-    parser.add_argument("-to", "--timeout",
-                        nargs="?", 
-                        type=int, 
-                        default=10, 
-                        help="specify number of seconds until a connection timeout (default=10)")
-    args = parser.parse_args()
-
-    # Parse the urls
-    if not args.url and not args.url_file:
-        parser.print_help()
-        print("\n[-] Please specify a URL (-u) or an input file containing URLs (-uf).\n")
-        exit()
-    if args.url and args.url_file:
-        parser.print_help()
-        print("\n[-] Please specify a URL (-u) or an input file containing URLs (-uf). Not both\n")
-        exit()
-    if args.url_file:
-        url_file = args.url_file
-        if not os.path.exists(url_file):
-            print("\n[-] The file cannot be found or you do not have permission to open the file. Please check the path and try again\n")
-            exit()
-        urls = open(url_file).read().splitlines()
-    if args.url:
-        if not args.url.startswith('http'):
-            parser.print_help()
-            print("\n[-] Please specify a URL in the format proto://address:port (https://example.com:80).\n")
-            exit()
-        urls = [args.url]
-
-    # Normalizes URLs to the proto://address:port format
-    urls = normalize_urls(urls)
-
-    # Parse the wordlist
-    if not args.wordlist:
-        parser.print_help()
-        print("\n[-] Please specify an input file containing a wordlist (-w).\n")
-        exit()
-    if not os.path.exists(args.wordlist):
-        print("\n[-] The file {} cannot be found or you do not have permission to open the file. Please check the path and try again\n".format(args.wordlist))
-        exit()
-    with open(args.wordlist) as fh:
-        wordlist = fh.read().splitlines()
-
-    # Suppress SSL warnings in the terminal
-    requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
-
-    # Number of cores. Will launch a process for each core.
-    if args.processes:
-        cores = args.processes
-    else:
-        cores = cpu_count()
     main()
