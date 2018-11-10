@@ -220,7 +220,7 @@ if __name__ == '__main__':
                         help="increase output verbosity",
                         action="store_true")
     parser.add_argument("-pr", "--proxy", 
-                        help="specify a proxy to use (-p 127.0.0.1:8080)")
+                        help="specify a proxy to use (-pr 127.0.0.1:8080)")
     parser.add_argument("-w", "--wordlist",
                         help="specify a file containing urls formatted http(s)://addr:port.")
     parser.add_argument("-uf", "--url_file",
