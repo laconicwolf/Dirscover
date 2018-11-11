@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 
 __author__ = "Jake Miller (@LaconicWolf)"
@@ -158,8 +158,8 @@ def make_request(url):
     return resp_data
 
 
-def process_queue(url, dir_queue, dirscover_data):
-    """Processes the dir_queue and calls the make_request function"""
+def manage_queue(url, dir_queue, dirscover_data):
+    """Manages the dir_queue and calls the make_request function"""
     while True:
         directory = dir_queue.get()
         resource = url.strip('/') + '/' + directory
@@ -213,7 +213,7 @@ def dirscover_multithreader(url):
 
     # Starts the multithreading
     for i in range(args.threads):
-        t = threading.Thread(target=process_queue, args=[url, dir_queue, dirscover_data])
+        t = threading.Thread(target=manage_queue, args=[url, dir_queue, dirscover_data])
         t.daemon = True
         t.start()    
 
