@@ -23,15 +23,13 @@ from random import randrange
 # Third party modules
 try:
     import requests
+    import tqdm
 except ImportError as error:
     missing_module = str(error).split(' ')[-1]
     print('[-] Missing module: {}'.format(missing_module))
     print('[*] Try running "pip install {}", or do an Internet search for installation instructions.'.format(missing_module.strip("'")))
     exit()
 from requests.packages.urllib3.exceptions import InsecureRequestWarning
-
-
-
 
 
 def get_random_useragent():
@@ -118,13 +116,17 @@ def make_request(url):
     try:
         resp = s.get(url, verify=False, timeout=int(args.timeout))
     except Exception as e:
-        print('[-] Experiencing network connectivity issues. Waiting 30 seconds and retrying the request...')
+        with lock:
+            print('[-] Experiencing network connectivity issues. Waiting 30 seconds and retrying the request...')
         time.sleep(30)
         try:
             resp = s.get(url, verify=False, timeout=int(args.timeout))
         except Exception as e:
-            print('[-] The request to {} failed with the following error:\n{}'.format(url, e))
-            print('Quitting!')
+            with lock:
+                print('[-] The request to {} failed with the following error:\n{}'.format(url, e))
+                print('Quitting!')
+    with lock:
+        p_bar.update(counter + 1)
     resp_len = len(resp.text)
     redir_url = resp.url if resp.url.strip('/') != url.strip('/') else ""
     if args.verbose:
@@ -135,7 +137,8 @@ def make_request(url):
                 redirect_url = redir_url
         else:
             redirect_url = redir_url
-        print("{} : {} : {} : {}".format(resp.status_code, url, resp_len, redirect_url))
+        with lock:
+            print("{} : {} : {} : {}".format(resp.status_code, url, resp_len, redirect_url))
 
     resp_data = (url, resp.status_code, resp_len, redir_url)
     return resp_data
@@ -198,7 +201,8 @@ def dirscover_multithreader(url):
     for i in range(args.threads):
         t = threading.Thread(target=process_queue, args=[url, dir_queue, dirscover_data])
         t.daemon = True
-        t.start()
+        t.start()    
+
     for directory in wordlist:
         dir_queue.put(directory)
     dir_queue.join()
@@ -247,7 +251,6 @@ parser.add_argument("-to", "--timeout",
                     help="specify number of seconds until a connection timeout (default=10)")
 args = parser.parse_args()
 
-
 # Suppress SSL warnings in the terminal
 requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
 
@@ -291,6 +294,13 @@ if not os.path.exists(args.wordlist):
     exit()
 with open(args.wordlist) as fh:
     wordlist = fh.read().splitlines()
+
+# Initializes progress bar. Not 100% accourate but 
+# better than nothing...
+p_bar = tqdm.tqdm(range(len(wordlist)))
+counter = 0
+
+lock = threading.Lock()
 
 if __name__ == '__main__':
     main()
