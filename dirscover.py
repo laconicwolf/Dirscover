@@ -19,6 +19,7 @@ import threading
 import queue
 from multiprocessing import Pool, cpu_count
 from random import randrange
+from urllib.parse import urlparse
 
 # Third party modules
 try:
