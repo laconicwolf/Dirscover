@@ -87,6 +87,8 @@ def normalize_urls(urls):
                 if u.path:
                     url += u.path
                     url_list.append(url)
+                else:
+                    url_list.append(url)
         else:
             if ':' in u.netloc:
                 port = u.netloc.split(':')[-1]
