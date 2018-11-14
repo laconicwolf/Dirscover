@@ -14,6 +14,13 @@ This script requires Python3 and does not work with previous versions.
 ```
 -v, --verbose       increase output verbosity.
 -pr, --proxy        specify a proxy to use (-pr 127.0.0.1:8080).
+-a, --auth          specify an address, auth type, username, and password
+                    for authentication delimited with ~~~. 
+                    Example: -a "https://example.com:8443~~~ntlm~~~domain/jmiller~~~S3Cr37P@ssW0rd"
+-c, --cookies       specify a domain(s) and cookie(s) data delimited with ~~~. 
+                    Example: -c "https://example.com:8443~~~C1=IlV0ZXh0L2h; C2=AHWqTUmF8I;" "http://example2.com:80~~~Token=19005936-1"
+-ua, --useragent    specify a User-Agent string to use. Default is a random browser User-Agent string.
+-r, --referer       specify a referer string to use.
 -w, --wordlist      specify a file containing urls formatted http(s)://addr:port.
 -uf, --url_file     specify a file containing urls formatted http(s)://addr:port.
 -u, --url           specify a single url formatted http(s)://addr:port.
