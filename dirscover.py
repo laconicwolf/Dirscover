@@ -293,7 +293,7 @@ def format_results(results):
                     redirect_url = redirect_url[:35] + '...'
                 except IndexError:
                     pass
-            #print("{} : {} : {} : {}".format(resp_code, url_path, resp_len, redirect_url))
+            print("{} : {} : {} : {}".format(resp_code, url_path, resp_len, redirect_url))
 
 
 def dirscover_multithreader(url):
