@@ -332,8 +332,9 @@ parser.add_argument("-v", "--verbose",
                     action="store_true")
 parser.add_argument("-pr", "--proxy", 
                     help="specify a proxy to use (-p 127.0.0.1:8080)")
-parser.add_argument("-a", "--auth", 
-                    help='specify an auth type, domain, username, and password for authentication delimited with ~~~. Example: -a "https://example.com:8443~~~ntlm~~~domain/jmiller~~~S3Cr37P@ssW0rd"')
+parser.add_argument("-a", "--auth",
+                    nargs="*",
+                    help='specify an address, auth type, username, and password for authentication delimited with ~~~. Example: -a "https://example.com:8443~~~ntlm~~~domain/jmiller~~~S3Cr37P@ssW0rd"')
 parser.add_argument("-c", "--cookies",
                     nargs="*",
                     help='specify a domain(s) and cookie(s) data delimited with ~~~. Example: -c "https://example.com:8443~~~C1=IlV0ZXh0L2h; C2=AHWqTUmF8I;" "http://example2.com:80~~~Token=19005936-1"')
@@ -428,7 +429,7 @@ if args.auth:
     auth_list = []
     for item in args.auth:
         if '~~~' not in item:
-            print('\n[-] Please specify an auth type, domain, username, and password for authentication delimited with ~~~. Example: -a "https://example.com:8443~~~ntlm~~~domain/jmiller~~~S3Cr37P@ssW0rd"\n')
+            print('\n[-] Please specify an address, auth type, username, and password for authentication delimited with ~~~. Example: -a "https://example.com:8443~~~ntlm~~~domain/jmiller~~~S3Cr37P@ssW0rd"\n')
             exit()
         auth_domain = item.split('~~~')[0]
         if auth_domain.strip('/') not in [u.strip('/') for u in urls]:
