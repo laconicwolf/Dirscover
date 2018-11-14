@@ -182,8 +182,9 @@ def make_request(url):
                 try:
                     resp = s.get(url, auth=HTTPDigestAuth(auth_uname, auth_passw), verify=False, timeout=int(args.timeout))
                 except Exception as e:
-                    with lock:
-                        print('[-] Experiencing network connectivity issues. Waiting 30 seconds and retrying the request...')
+                    if args.verbose:
+                        with lock:
+                            print('[-] Experiencing network connectivity issues. Waiting 30 seconds and retrying the request...')
                     time.sleep(30)
                     try:
                         resp = s.get(url, auth=HTTPDigestAuth(auth_uname, auth_passw), verify=False, timeout=int(args.timeout))
@@ -198,8 +199,9 @@ def make_request(url):
                 try:
                     resp = s.get(url, verify=False, timeout=int(args.timeout))
                 except Exception as e:
-                    with lock:
-                        print('[-] Experiencing network connectivity issues. Waiting 30 seconds and retrying the request...')
+                    if args.verbose:
+                        with lock:
+                            print('[-] Experiencing network connectivity issues. Waiting 30 seconds and retrying the request...')
                     time.sleep(30)
                     try:
                         resp = s.get(url, verify=False, timeout=int(args.timeout))
@@ -214,8 +216,9 @@ def make_request(url):
         try:
             resp = s.get(url, verify=False, timeout=int(args.timeout))
         except Exception as e:
-            with lock:
-                print('[-] Experiencing network connectivity issues. Waiting 30 seconds and retrying the request...')
+            if args.verbose:
+                with lock:
+                    print('[-] Experiencing network connectivity issues. Waiting 30 seconds and retrying the request...')
             time.sleep(30)
             try:
                 resp = s.get(url, verify=False, timeout=int(args.timeout))
@@ -266,28 +269,31 @@ def format_results(results):
         os.mkdir(dirname) 
 
     # Name the file based on the domain name
-    filename = results[1][0].split('/')[2].replace('.', '_') + '.csv'
-
+    filename = results[1][0].split('/')[2].replace('.', '_').replace(':','-') + '.csv'
+    
     # Write the file
     filepath = dirname + os.sep + filename
-    with open(filepath, 'w') as outfile:
-        for item in results:
-            item = [str(i) for i in item]
-            outfile.write(','.join(item) + '\n')
-    print("\n[*] Results file written to {}.".format(filepath))
+    with lock:
+        with open(filepath, 'w') as outfile:
+            for item in results:
+                item = [str(i) for i in item]
+                outfile.write(','.join(item) + '\n')
+        outfile.close()
+        print("\n[*] Results file written to {}.".format(filepath))
 
     # Print the results to the screen
-    print()
-    for item in results:
-        url_path, resp_code, resp_len, redirect_url = item
+    with lock:
+        print()
+        for item in results:
+            url_path, resp_code, resp_len, redirect_url = item
 
-        # Truncate the redirect url string
-        if redirect_url and redirect_url != 'Redirect URL':
-            try:
-                redirect_url = redirect_url[:35] + '...'
-            except IndexError:
-                pass
-        print("{} : {} : {} : {}".format(resp_code, url_path, resp_len, redirect_url))
+            # Truncate the redirect url string
+            if redirect_url and redirect_url != 'Redirect URL':
+                try:
+                    redirect_url = redirect_url[:35] + '...'
+                except IndexError:
+                    pass
+            #print("{} : {} : {} : {}".format(resp_code, url_path, resp_len, redirect_url))
 
 
 def dirscover_multithreader(url):
