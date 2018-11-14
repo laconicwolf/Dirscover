@@ -25,12 +25,15 @@ from urllib.parse import urlparse
 try:
     import requests
     import tqdm
+    from requests_ntlm import HttpNtlmAuth
 except ImportError as error:
     missing_module = str(error).split(' ')[-1]
     print('[-] Missing module: {}'.format(missing_module))
     print('[*] Try running "pip install {}", or do an Internet search for installation instructions.'.format(missing_module.strip("'")))
     exit()
 from requests.packages.urllib3.exceptions import InsecureRequestWarning
+from requests.auth import HTTPBasicAuth
+from requests.auth import HTTPDigestAuth
 
 
 def get_random_useragent():
@@ -121,28 +124,116 @@ def make_request(url):
     """Builds a requests object, makes a request, and returns 
     a response object.
     """
+
+    # Initialize a session object
     s = requests.Session()
-    user_agent = get_random_useragent()
+    
+    # Add a user agent from commandline options or select
+    # a random user agent.
+    user_agent = args.useragent if args.useragent else get_random_useragent()
     s.headers['User-Agent'] = user_agent
+    
+    # Parse and add cookies specified from commandline options
+    if args.cookies:
+        for item in cookie_list:
+            if item[0] not in url:
+                continue
+            domain_cookies = item[1]
+            cookies = domain_cookies.split(';')
+            for cookie in cookies:
+                cookie_name = cookie.split('=')[0].lstrip()
+                cookie_value = '='.join(cookie.split('=')[1:]).lstrip()
+                s.cookies[cookie_name] = cookie_value
+    
+    # Add referer if specified by commandline options
+    if args.referer:
+        s.headers['Referer'] = args.referer
+    
+    # Add a proxy if specified by commandline options
     if args.proxy:
         s.proxies['http'] = args.proxy
         s.proxies['https'] = args.proxy
-    try:
-        resp = s.get(url, verify=False, timeout=int(args.timeout))
-    except Exception as e:
-        with lock:
-            print('[-] Experiencing network connectivity issues. Waiting 30 seconds and retrying the request...')
-        time.sleep(30)
+
+    # Add an authrization header if specified by commandline
+    # options. Handle basic, digest, and ntlm
+    if args.auth:
+        for item in auth_list:
+            if item[0] not in url:
+                continue
+            auth_addr = item[0]
+            auth_method = item[1]
+            auth_uname = item[2]
+            auth_passw = item[3]
+            if auth_method.lower() == 'basic':
+                try:
+                    resp = s.get(url, auth=(auth_uname, auth_passw), verify=False, timeout=int(args.timeout))
+                except Exception as e:
+                    if args.verbose:
+                        with lock:
+                            print('[-] Experiencing network connectivity issues. Waiting 30 seconds and retrying the request...')
+                    time.sleep(30)
+                    try:
+                        resp = s.get(url, auth=(auth_uname, auth_passw), verify=False, timeout=int(args.timeout))
+                    except Exception as e:
+                        with lock:
+                            print('[-] The request to {} failed with the following error:\n{}'.format(url, e))
+                            return (url, 'FAIL', 'FAIL', 'FAIL')
+            if auth_method.lower() == 'digest':
+                try:
+                    resp = s.get(url, auth=HTTPDigestAuth(auth_uname, auth_passw), verify=False, timeout=int(args.timeout))
+                except Exception as e:
+                    with lock:
+                        print('[-] Experiencing network connectivity issues. Waiting 30 seconds and retrying the request...')
+                    time.sleep(30)
+                    try:
+                        resp = s.get(url, auth=HTTPDigestAuth(auth_uname, auth_passw), verify=False, timeout=int(args.timeout))
+                    except Exception as e:
+                        with lock:
+                            print('[-] The request to {} failed with the following error:\n{}'.format(url, e))
+                            return (url, 'FAIL', 'FAIL', 'FAIL')
+            if auth_method.lower() == 'ntlm':
+                nt_auth_dom = auth_uname.split('/')[0]
+                nt_auth_uname = auth_uname.split('/')[1]
+                s.auth = HttpNtlmAuth(nt_auth_dom + '\\' + nt_auth_uname, auth_passw)
+                try:
+                    resp = s.get(url, verify=False, timeout=int(args.timeout))
+                except Exception as e:
+                    with lock:
+                        print('[-] Experiencing network connectivity issues. Waiting 30 seconds and retrying the request...')
+                    time.sleep(30)
+                    try:
+                        resp = s.get(url, verify=False, timeout=int(args.timeout))
+                    except Exception as e:
+                        with lock:
+                            print('[-] The request to {} failed with the following error:\n{}'.format(url, e))
+                            return (url, 'FAIL', 'FAIL', 'FAIL')
+    
+    # Unless Auth is specified, send the request
+    # with no authorization header.
+    else:
         try:
             resp = s.get(url, verify=False, timeout=int(args.timeout))
         except Exception as e:
             with lock:
-                print('[-] The request to {} failed with the following error:\n{}'.format(url, e))
-                print('Quitting!')
+                print('[-] Experiencing network connectivity issues. Waiting 30 seconds and retrying the request...')
+            time.sleep(30)
+            try:
+                resp = s.get(url, verify=False, timeout=int(args.timeout))
+            except Exception as e:
+                with lock:
+                    print('[-] The request to {} failed with the following error:\n{}'.format(url, e))
+                    return (url, 'FAIL', 'FAIL', 'FAIL')
+    
+    # Update the status bar
     with lock:
         p_bar.update(counter + 1)
+    
+    # Determine the response length and 
+    # whether a redirect occurred
     resp_len = len(resp.text)
     redir_url = resp.url if resp.url.strip('/') != url.strip('/') else ""
+    
+    # Print data to screen if verbose and return the data.
     if args.verbose:
         if redir_url:
             try:
@@ -153,7 +244,6 @@ def make_request(url):
             redirect_url = redir_url
         with lock:
             print("{} : {} : {} : {}".format(resp.status_code, url, resp_len, redirect_url))
-
     resp_data = (url, resp.status_code, resp_len, redir_url)
     return resp_data
 
@@ -242,6 +332,15 @@ parser.add_argument("-v", "--verbose",
                     action="store_true")
 parser.add_argument("-pr", "--proxy", 
                     help="specify a proxy to use (-p 127.0.0.1:8080)")
+parser.add_argument("-a", "--auth", 
+                    help='specify an auth type, domain, username, and password for authentication delimited with ~~~. Example: -a "https://example.com:8443~~~ntlm~~~domain/jmiller~~~S3Cr37P@ssW0rd"')
+parser.add_argument("-c", "--cookies",
+                    nargs="*",
+                    help='specify a domain(s) and cookie(s) data delimited with ~~~. Example: -c "https://example.com:8443~~~C1=IlV0ZXh0L2h; C2=AHWqTUmF8I;" "http://example2.com:80~~~Token=19005936-1"')
+parser.add_argument("-ua", "--useragent", 
+                    help="specify a User Agent string to use. Default is a random User Agent string.")
+parser.add_argument("-r", "--referer", 
+                    help="specify a referer string to use.")
 parser.add_argument("-w", "--wordlist",
                     help="specify a file containing urls formatted http(s)://addr:port.")
 parser.add_argument("-uf", "--url_file",
@@ -309,11 +408,50 @@ if not os.path.exists(args.wordlist):
 with open(args.wordlist) as fh:
     wordlist = fh.read().splitlines()
 
+# Parses cookies
+if args.cookies:
+    cookie_list = []
+    for item in args.cookies:
+        if '~~~' not in item:
+            print('\n[-] Please specify the domain with the cookies using 3 tildes as a delimiter to separate the domain the cookie (-c "https://example.com:8443~~~C1=IlV0ZXh0L2h; C2=AHWqTUmF8I; Token=19005936-1").\n')
+            exit()
+        cookie_domain = item.split('~~~')[0]
+        cookies = item.split('~~~')[1]
+        if cookie_domain.strip('/') not in [u.strip('/') for u in urls]:
+            print('\n[-] Could not find {} in the URL list. Exiting.\n'.format('cookie_domain'))
+            exit()
+        else:
+            cookie_list.append((cookie_domain, cookies))
+
+# Parses the authorization options
+if args.auth:
+    auth_list = []
+    for item in args.auth:
+        if '~~~' not in item:
+            print('\n[-] Please specify an auth type, domain, username, and password for authentication delimited with ~~~. Example: -a "https://example.com:8443~~~ntlm~~~domain/jmiller~~~S3Cr37P@ssW0rd"\n')
+            exit()
+        auth_domain = item.split('~~~')[0]
+        if auth_domain.strip('/') not in [u.strip('/') for u in urls]:
+            print('\n[-] Could not find {} in the URL list. Exiting\n'.format('auth_domain'))
+            exit()
+        auth_type = item.split('~~~')[1]
+        possible_auth_types = ['basic', 'digest', 'ntlm']
+        if auth_type.lower() not in possible_auth_types:
+            print("\n[-] Authorization type {} not supported. Only Basic, Digest, or NTLM are supported.\n".format(auth_type))
+            exit()
+        username = item.split('~~~')[2]
+        if auth_type.lower() == 'ntlm' and '/' not in username:
+            print('\n[-] NTLM auth requres a domain with a username, delimited by /. Example: -a "https://example.com:8443~~~ntlm~~~example.domain/jmiller~~~S3Cr37P@ssW0rd"\n')
+            exit()
+        password = item.split('~~~')[3]
+        auth_list.append((auth_domain, auth_type, username, password))
+
 # Initializes progress bar. Not 100% accourate but 
 # better than nothing...
 p_bar = tqdm.tqdm(range(len(wordlist)))
 counter = 0
 
+# Initilizes the lock for thread-safe operations
 lock = threading.Lock()
 
 if __name__ == '__main__':
