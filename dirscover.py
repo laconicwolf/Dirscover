@@ -419,7 +419,6 @@ parser.add_argument("-s", "--status_code_filter",
                     nargs="*",
                     help="specify the status code(s) to be displayed (-s 200 403 201). Default is all.")
 parser.add_argument("-p", "--processes",
-                    nargs="?",
                     type=int,
                     help="specify number of processes (default will utilize 1 process per cpu core)")
 parser.add_argument("-t", "--threads",
