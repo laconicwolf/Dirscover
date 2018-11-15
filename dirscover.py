@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
 
-
 __author__ = "Jake Miller (@LaconicWolf)"
 __date__ = "20181109"
 __version__ = "0.01"
@@ -364,7 +363,13 @@ def dirscover_multithreader(url):
     
 
 def main():
+    '''Where it all starts...'''
+
+    # Clear the screen because the progress bar starts
+    # first and looks ugly.
     subprocess.call('cls||clear', shell=True, stderr=subprocess.DEVNULL)
+    
+    # Print banner and arguments
     print(banner())
     print()
     word_banner = '{} version: {}. Coded by: {}'.format(sys.argv[0].title()[:-3], __version__, __author__)
@@ -438,6 +443,7 @@ if args.processes:
     cores = args.processes
 else:
     cores = cpu_count()
+
 # Parse the urls
 if not args.url and not args.url_file:
     parser.print_help()
@@ -463,7 +469,7 @@ if args.url:
 # Normalizes URLs to the proto://address:port format
 urls = normalize_urls(urls)
 
-# Parse the wordlist
+# Parses the wordlist
 if not args.wordlist:
     parser.print_help()
     print("\n[-] Please specify an input file containing a wordlist (-w).\n")
@@ -512,6 +518,7 @@ if args.auth:
         password = item.split('~~~')[3]
         auth_list.append((auth_domain, auth_type, username, password))
  
+# Does basic checking on supplied status codes
 if args.status_code_filter:
     for item in args.status_code_filter:
         if not item[0].isnumeric():
@@ -526,7 +533,7 @@ else:
 p_bar = tqdm.tqdm(range(len(wordlist)))
 counter = 0
 
-# Initilizes the lock for thread-safe operations
+# Initializes the lock for thread-safe operations
 lock = threading.Lock()
 
 if __name__ == '__main__':
