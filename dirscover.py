@@ -23,14 +23,19 @@ from multiprocessing import Pool, cpu_count
 from urllib.parse import urlparse
 
 # Third party modules
+missing_modules = []
 try:
     import requests
     import tqdm
     from requests_ntlm import HttpNtlmAuth
 except ImportError as error:
     missing_module = str(error).split(' ')[-1]
-    print('[-] Missing module: {}'.format(missing_module))
-    print('[*] Try running "pip install {}", or do an Internet search for installation instructions.'.format(missing_module.strip("'")))
+    missing_modules.append(missing_module)
+
+if missing_modules:
+    for m in missing_modules:
+        print('[-] Missing module: {}'.format(m))
+        print('[*] Try running "pip3 install {}", or do an Internet search for installation instructions.\n'.format(m.strip("'")))
     exit()
 from requests.packages.urllib3.exceptions import InsecureRequestWarning
 from requests.auth import HTTPBasicAuth
@@ -38,7 +43,8 @@ from requests.auth import HTTPDigestAuth
 
 
 def banner():
-    """Sweet ascii art to follow"""
+    """Ascii art generated from
+     https://www.ascii-art-generator.org/"""
     ascii_art =  '''
     ____  _                                    
    / __ \\(_)__________________ _   _____  _____
