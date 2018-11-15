@@ -1,7 +1,7 @@
 # Dirscover
 A multi-processed, multi-threaded scanner to perform forced browsing on multiple URLs. Feed it a wordlist (of files/directory names) and a URL (or file containing multiple URLs) and Dirscover will send web requests to discover files or directories specified in the wordlist. For each request Dirscover returns the URL, response code, response length, and redirect url (if applicable). The results will also be written to a CSV file for each URL provided.
 
-Dirscover is meant to be fast. By default it will detect the amount of CPU cores available and launch that many processes. Each URL that you pass will be spawned as a new process, and each process is multi-threaded with a default of 5 threads. Feel free to increase the threads if you want each site to be forced browse more quickly.
+Dirscover is meant to be fast. By default it will detect the amount of CPU cores available and launch that many processes. Each URL that you pass will be spawned as a new process, and each process is multi-threaded with a default of 10 threads. Feel free to increase/decrease the threads as you see fit.
 
 A progress bar will appear, however it will only give you a general idea of your progress if you are forced browsing multiple sites, because it will refresh itself with the data from each process.
 
