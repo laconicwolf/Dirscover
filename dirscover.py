@@ -6,19 +6,21 @@ __date__ = "20181109"
 __version__ = "0.01"
 __description__ = """A multi-processed, multi-threaded scanner to discover web directories on multiple URLs."""
 
-from sys import version
+import sys
 
-if not version.startswith('3'):
+if not sys.version.startswith('3'):
     print('\n[-] This script will only work with Python3. Sorry!\n')
     exit()
 
+import subprocess
 import os
 import argparse
 import time
 import threading
 import queue
+import string
+import random
 from multiprocessing import Pool, cpu_count
-from random import randrange
 from urllib.parse import urlparse
 
 # Third party modules
@@ -34,6 +36,18 @@ except ImportError as error:
 from requests.packages.urllib3.exceptions import InsecureRequestWarning
 from requests.auth import HTTPBasicAuth
 from requests.auth import HTTPDigestAuth
+
+
+def banner():
+    """Sweet ascii art to follow"""
+    ascii_art =  '''
+    ____  _                                    
+   / __ \\(_)__________________ _   _____  _____
+  / / / / / ___/ ___/ ___/ __ \\ | / / _ \\/ ___/
+ / /_/ / / /  (__  ) /__/ /_/ / |/ /  __/ /    
+/_____/_/_/  /____/\\___/\\____/|___/\\___/_/     
+'''
+    return ascii_art
 
 
 def get_random_useragent():
@@ -52,7 +66,7 @@ def get_random_useragent():
         5: mac_chrome,
         6: ie
     }
-    rand_num = randrange(1, (len(ua_dict) + 1))
+    rand_num = random.randrange(1, (len(ua_dict) + 1))
     return ua_dict[rand_num]
 
 
@@ -249,8 +263,17 @@ def make_request(url):
                 redirect_url = redir_url
         else:
             redirect_url = redir_url
-        with lock:
-            print("{} : {} : {} : {}".format(resp.status_code, url, resp_len, redirect_url))
+        if status_code_filter:
+            if any("*" in s for s in status_code_filter):
+                if str(resp.status_code)[0] in [code[0] for code in status_code_filter if '*' in code]:
+                    with lock:
+                        print("{} : {} : {} : {}".format(resp.status_code, url, resp_len, redirect_url))
+            if str(resp.status_code) in [s for s in status_code_filter]:
+                with lock:
+                    print("{} : {} : {} : {}".format(resp.status_code, url, resp_len, redirect_url))
+        else:
+            with lock:
+                print("{} : {} : {} : {}".format(resp.status_code, url, resp_len, redirect_url))
     resp_data = (url, resp.status_code, resp_len, redir_url)
     return resp_data
 
@@ -278,11 +301,19 @@ def format_results(results):
     # Write the file
     filepath = dirname + os.sep + filename
     with lock:
-        with open(filepath, 'w') as outfile:
-            for item in results:
-                item = [str(i) for i in item]
-                outfile.write(','.join(item) + '\n')
-        outfile.close()
+        try:
+            with open(filepath, 'w') as outfile:
+                for item in results:
+                    item = [str(i) for i in item]
+                    outfile.write(','.join(item) + '\n')
+            outfile.close()
+        except:
+            filepath = filepath[:-4] + '_' + ''.join(random.choice(string.ascii_lowercase + string.digits) for _ in range(5)) + '.csv'
+            with open(filepath, 'w') as outfile:
+                for item in results:
+                    item = [str(i) for i in item]
+                    outfile.write(','.join(item) + '\n')
+            outfile.close()
         print("\n[*] Results file written to {}.".format(filepath))
 
     # Print the results to the screen
@@ -297,7 +328,14 @@ def format_results(results):
                     redirect_url = redirect_url[:35] + '...'
                 except IndexError:
                     pass
-            print("{} : {} : {} : {}".format(resp_code, url_path, resp_len, redirect_url))
+            if status_code_filter:
+                if any("*" in s for s in status_code_filter):
+                    if str(resp_code)[0] in [code[0] for code in status_code_filter if '*' in code]:
+                        print("{} : {} : {} : {}".format(resp_code, url_path, resp_len, redirect_url))
+                if str(resp_code) in [s for s in status_code_filter]:
+                    print("{} : {} : {} : {}".format(resp_code, url_path, resp_len, redirect_url))
+            elif args.verbose:
+                    print("{} : {} : {} : {}".format(resp_code, url_path, resp_len, redirect_url))
 
 
 def dirscover_multithreader(url):
@@ -326,6 +364,20 @@ def dirscover_multithreader(url):
     
 
 def main():
+    subprocess.call('cls||clear', shell=True, stderr=subprocess.DEVNULL)
+    print(banner())
+    print()
+    word_banner = '{} version: {}. Coded by: {}'.format(sys.argv[0].title()[:-3], __version__, __author__)
+    print('=' * len(word_banner))
+    print(word_banner)
+    print('=' * len(word_banner))
+    print()
+    for arg in vars(args):
+        if getattr(args, arg):
+            print('{}: {}'.format(arg.title().replace('_',' '), getattr(args, arg)))
+    print()
+    time.sleep(3)
+    
     start = time.time()
 
     # Starts multiprocessing
@@ -358,6 +410,9 @@ parser.add_argument("-uf", "--url_file",
                     help="specify a file containing urls formatted http(s)://addr:port.")
 parser.add_argument("-u", "--url",
                     help="specify a single url formatted http(s)://addr:port.")
+parser.add_argument("-s", "--status_code_filter",
+                    nargs="*",
+                    help="specify the status code(s) to be displayed (-s 200 403 201). Default is all.")
 parser.add_argument("-p", "--processes",
                     nargs="?",
                     type=int,
@@ -365,9 +420,9 @@ parser.add_argument("-p", "--processes",
 parser.add_argument("-t", "--threads",
                     nargs="?",
                     type=int,
-                    const=5,
-                    default=5,
-                    help="specify number of threads (default=5)")
+                    const=10,
+                    default=10,
+                    help="specify number of threads (default=10)")
 parser.add_argument("-to", "--timeout",
                     nargs="?", 
                     type=int, 
@@ -456,6 +511,15 @@ if args.auth:
             exit()
         password = item.split('~~~')[3]
         auth_list.append((auth_domain, auth_type, username, password))
+ 
+if args.status_code_filter:
+    for item in args.status_code_filter:
+        if not item[0].isnumeric():
+            print('\n[-] {} is an unrecognized status code. Please specify a valid status code. Examples: -s 2* 403 500. Exiting.\n'.format(item))
+            exit()
+    status_code_filter = args.status_code_filter
+else:
+    status_code_filter = []
 
 # Initializes progress bar. Not 100% accourate but 
 # better than nothing...
