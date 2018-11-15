@@ -126,7 +126,7 @@ def normalize_urls(urls):
 
 def make_request(url):
     """Builds a requests object, makes a request, and returns 
-    a response object.
+    a tuple of response attributes.
     """
 
     # Initialize a session object
