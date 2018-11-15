@@ -158,7 +158,7 @@ def make_request(url):
         s.proxies['http'] = args.proxy
         s.proxies['https'] = args.proxy
 
-    # Add an authrization header if specified by commandline
+    # Add an authorization header if specified by commandline
     # options. Handle basic, digest, and ntlm
     if args.auth:
         for item in auth_list:
