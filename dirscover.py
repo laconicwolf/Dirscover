@@ -300,25 +300,17 @@ def format_results(results):
     if dirname not in os.listdir():
         os.mkdir(dirname) 
 
-    # Name the file based on the domain name
-    filename = results[1][0].split('/')[2].replace('.', '_').replace(':','-') + '.csv'
+    # Name the file based on the domain name and a time stamp
+    filename = results[1][0].split('/')[2].replace('.', '_').replace(':','_') + '-' + str(time.time()).replace('.', '') + '.csv'
     
     # Write the file
     filepath = dirname + os.sep + filename
     with lock:
-        try:
-            with open(filepath, 'w') as outfile:
-                for item in results:
-                    item = [str(i) for i in item]
-                    outfile.write(','.join(item) + '\n')
-            outfile.close()
-        except:
-            filepath = filepath[:-4] + '_' + ''.join(random.choice(string.ascii_lowercase + string.digits) for _ in range(5)) + '.csv'
-            with open(filepath, 'w') as outfile:
-                for item in results:
-                    item = [str(i) for i in item]
-                    outfile.write(','.join(item) + '\n')
-            outfile.close()
+        with open(filepath, 'w') as outfile:
+            for item in results:
+                item = [str(i) for i in item]
+                outfile.write(','.join(item) + '\n')
+        outfile.close()
         print("\n[*] Results file written to {}.".format(filepath))
 
     # Print the results to the screen
