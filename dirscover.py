@@ -487,7 +487,7 @@ if args.cookies:
         cookie_domain = item.split('~~~')[0]
         cookies = item.split('~~~')[1]
         if cookie_domain.strip('/') not in [u.strip('/') for u in urls]:
-            print('\n[-] Could not find {} in the URL list. Exiting.\n'.format('cookie_domain'))
+            print('\n[-] Could not find {} in the URL list. Exiting.\n'.format(cookie_domain))
             exit()
         else:
             cookie_list.append((cookie_domain, cookies))
@@ -501,7 +501,7 @@ if args.auth:
             exit()
         auth_domain = item.split('~~~')[0]
         if auth_domain.strip('/') not in [u.strip('/') for u in urls]:
-            print('\n[-] Could not find {} in the URL list. Exiting\n'.format('auth_domain'))
+            print('\n[-] Could not find {} in the URL list. Exiting\n'.format(auth_domain))
             exit()
         auth_type = item.split('~~~')[1]
         possible_auth_types = ['basic', 'digest', 'ntlm']
