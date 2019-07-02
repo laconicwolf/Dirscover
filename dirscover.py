@@ -176,6 +176,12 @@ def make_request(url):
     if args.proxy:
         s.proxies['http'] = args.proxy
         s.proxies['https'] = args.proxy
+        
+    # Add a custom header if specified
+    if args.custom_header:
+        cust_header = args.custom_header.split('~~~')[0]
+        cust_value = args.custom_header.split('~~~')[1]
+        s.headers[cust_header] = cust_value
 
     # Add an authorization header if specified by commandline
     # options. Handle basic, digest, and ntlm
@@ -396,7 +402,10 @@ parser.add_argument("-v", "--verbose",
                     help="increase output verbosity",
                     action="store_true")
 parser.add_argument("-pr", "--proxy", 
-                    help="specify a proxy to use (-p 127.0.0.1:8080)")
+                    help="specify a proxy to use (-pr 127.0.0.1:8080)")
+parser.add_argument("-ch", "--custome-header",
+                    nargs="*",
+                    help='specify a custom header and value,  delimited with ~~~. Example: -a "X-Custom-Header~~~Custom-Value"')
 parser.add_argument("-a", "--auth",
                     nargs="*",
                     help='specify an address, auth type, username, and password for authentication delimited with ~~~. Example: -a "https://example.com:8443~~~ntlm~~~domain/jmiller~~~S3Cr37P@ssW0rd"')
