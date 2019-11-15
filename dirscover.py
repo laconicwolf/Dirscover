@@ -403,7 +403,7 @@ parser.add_argument("-v", "--verbose",
                     action="store_true")
 parser.add_argument("-pr", "--proxy", 
                     help="specify a proxy to use (-pr 127.0.0.1:8080)")
-parser.add_argument("-ch", "--custome-header",
+parser.add_argument("-ch", "--custom-header",
                     nargs="*",
                     help='specify a custom header and value,  delimited with ~~~. Example: -a "X-Custom-Header~~~Custom-Value"')
 parser.add_argument("-a", "--auth",
